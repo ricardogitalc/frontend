@@ -1,18 +1,28 @@
-type AuthEventType = "logout" | "login" | "refresh";
+type AuthEventListener = () => void;
 
-class AuthEvents {
-  private subscribers: ((type: AuthEventType) => void)[] = [];
+class AuthEventEmitter {
+  private listeners: AuthEventListener[] = [];
+  private static instance: AuthEventEmitter;
 
-  subscribe(callback: (type: AuthEventType) => void) {
-    this.subscribers.push(callback);
+  private constructor() {}
+
+  static getInstance(): AuthEventEmitter {
+    if (!AuthEventEmitter.instance) {
+      AuthEventEmitter.instance = new AuthEventEmitter();
+    }
+    return AuthEventEmitter.instance;
+  }
+
+  subscribe(listener: AuthEventListener) {
+    this.listeners.push(listener);
     return () => {
-      this.subscribers = this.subscribers.filter((cb) => cb !== callback);
+      this.listeners = this.listeners.filter((l) => l !== listener);
     };
   }
 
-  emit(type: AuthEventType = "logout") {
-    this.subscribers.forEach((callback) => callback(type));
+  emit() {
+    this.listeners.forEach((listener) => listener());
   }
 }
 
-export const authEvents = new AuthEvents();
+export const authEvents = AuthEventEmitter.getInstance();

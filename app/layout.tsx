@@ -4,7 +4,6 @@ import "./globals.css";
 import Navbar from "@/components/navbar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/contexts/auth-context";
-import { RouteGuard } from "@/components/route-guard";
 import Loading from "./loading";
 import React, { Suspense } from "react";
 
@@ -38,17 +37,15 @@ export default function RootLayout({
       >
         <Suspense fallback={<Loading />}>
           <AuthProvider>
-            <RouteGuard>
-              <ThemeProvider
-                attribute="class"
-                defaultTheme="system"
-                enableSystem
-                disableTransitionOnChange
-              >
-                <Navbar />
-                {children}
-              </ThemeProvider>
-            </RouteGuard>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="system"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <Navbar />
+              {children}
+            </ThemeProvider>
           </AuthProvider>
         </Suspense>
       </body>

@@ -30,24 +30,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const isCheckingAuth = useRef(false);
 
   const checkAuth = useCallback(async () => {
     if (isCheckingAuth.current) return;
     isCheckingAuth.current = true;
 
-    console.log("Iniciando verificação de autenticação...");
-
     try {
       const response = await api.get("/auth/me");
 
       if (response.data) {
-        console.log("Usuário autenticado:", response.data);
         setUser(response.data);
         setIsAuthenticated(true);
       }
     } catch (error: any) {
-      console.error("Erro na verificação de autenticação:", error);
       setUser(null);
       setIsAuthenticated(false);
 
@@ -56,14 +53,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const currentPath = window.location.pathname;
         const publicRoutes = [
-          "/",
           "/login",
           "/register",
           "/verify-login",
           "/verify-register",
         ];
 
-        // Só redireciona para login se não estiver em uma rota pública
         if (
           !publicRoutes.includes(currentPath) &&
           !currentPath.includes("/verify-register/")
@@ -74,17 +69,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsInitialized(true);
       isCheckingAuth.current = false;
-      console.log("Verificação de autenticação concluída.");
     }
   }, [router]);
 
   useEffect(() => {
+    const currentPath = pathname;
+    const publicRoutes = [
+      "/login",
+      "/register",
+      "/verify-login",
+      "/verify-register",
+    ];
+    const isVerifyRegisterPath = pathname.startsWith("/verify-register/");
+
+    if (publicRoutes.includes(currentPath) || isVerifyRegisterPath) {
+      setIsInitialized(true);
+      return;
+    }
+
     if (!isAuthenticated) {
       checkAuth();
     } else {
       setIsInitialized(true);
     }
-  }, [checkAuth, isAuthenticated]);
+  }, [checkAuth, pathname, isAuthenticated]);
+
+  // Controle de redirecionamentos
+  useEffect(() => {
+    if (!isInitialized) return;
+
+    const publicRoutes = [
+      "/login",
+      "/register",
+      "/verify-login",
+      "/verify-register",
+    ];
+    const protectedRoutes = ["/profile", "/dashboard"];
+
+    if (isAuthenticated && publicRoutes.includes(pathname)) {
+      router.replace("/");
+    } else if (!isAuthenticated && protectedRoutes.includes(pathname)) {
+      router.replace("/login");
+    }
+  }, [isAuthenticated, pathname, router, isInitialized]);
 
   // Adicionar listener para eventos de autenticação
   useEffect(() => {
@@ -99,7 +126,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Modificar o login para emitir evento
   const login = useCallback(
     (userData: User) => {
-      console.log("Usuário logado:", userData);
       setUser(userData);
       setIsAuthenticated(true);
       setIsInitialized(true);
@@ -115,7 +141,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Modificar o logout para emitir evento
   const logout = async () => {
     try {
-      console.log("Usuário deslogando...");
       await api.post("/auth/logout");
       setUser(null);
       setIsAuthenticated(false);
