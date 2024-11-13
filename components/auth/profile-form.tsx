@@ -17,16 +17,34 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { UpdateUserProfile, User } from "@/types";
-
-interface FormProfileProps {
-  user: User;
-}
+import { FormProfileProps } from "@/interfaces";
 
 export function ProfileForm({ user }: FormProfileProps) {
   const { refreshAuth } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [formChanged, setFormChanged] = useState(false);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    let changed = false;
+
+    switch (name) {
+      case "firstName":
+        changed = value.trim() !== user.firstName;
+        break;
+      case "lastName":
+        changed = value.trim() !== user.lastName;
+        break;
+      case "whatsapp":
+        const cleanValue = value.replace(/\D/g, "");
+        changed = cleanValue !== user.whatsapp;
+        break;
+    }
+
+    setFormChanged(changed);
+  };
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     try {
@@ -96,6 +114,7 @@ export function ProfileForm({ user }: FormProfileProps) {
               placeholder="Nome"
               required
               disabled={isLoading}
+              onChange={handleInputChange}
             />
           </div>
           <div className="space-y-2">
@@ -107,6 +126,7 @@ export function ProfileForm({ user }: FormProfileProps) {
               placeholder="Sobrenome"
               required
               disabled={isLoading}
+              onChange={handleInputChange}
             />
           </div>
           <div className="space-y-2">
@@ -119,6 +139,7 @@ export function ProfileForm({ user }: FormProfileProps) {
               pattern="\d*"
               title="Digite apenas números"
               disabled={isLoading}
+              onChange={handleInputChange}
             />
           </div>
           {error && (
@@ -133,7 +154,11 @@ export function ProfileForm({ user }: FormProfileProps) {
           )}
         </CardContent>
         <CardFooter>
-          <Button className="w-full" type="submit" disabled={isLoading}>
+          <Button
+            className="w-full"
+            type="submit"
+            disabled={isLoading || !formChanged}
+          >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
