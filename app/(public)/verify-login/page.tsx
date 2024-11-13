@@ -7,10 +7,12 @@ import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import api from "@/services/api";
 import { authEvents } from "@/hooks/auth-events";
+import { useAuth } from "@/contexts/auth-context";
 
 export default function VerifyLoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { refreshAuth } = useAuth();
   const token = searchParams.get("token");
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading"
@@ -32,10 +34,9 @@ export default function VerifyLoginPage() {
           setStatus("success");
           setMessage(response.data.message);
 
-          // Emitir evento de autenticação
-          authEvents.emit();
-
-          setTimeout(() => {
+          // Aguarda 3 segundos para mostrar a mensagem antes de atualizar o estado
+          setTimeout(async () => {
+            await refreshAuth();
             router.replace("/");
           }, 3000);
         }
@@ -62,7 +63,7 @@ export default function VerifyLoginPage() {
 
     verificationAttempted.current = true;
     verifyToken();
-  }, [token, router]);
+  }, [token, router, refreshAuth]);
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
