@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import api from "@/services/api";
 import { authEvents } from "@/hooks/auth-events";
 import { useAuth } from "@/contexts/auth-context";
+import { VerifyMessage } from "@/components/verify-message";
 
 type VerifyState = {
   status: "loading" | "success" | "error";
@@ -46,37 +47,33 @@ export default function VerifyLoginPage() {
   const { login, refreshAuth } = useAuth();
 
   const verifyToken = useCallback(async () => {
-    console.log("[VerifyLogin] Iniciando verificação do token");
     if (!token || verificationAttempted.current) {
-      console.log("[VerifyLogin] Token inválido ou verificação já realizada");
       !token && router.replace("/login");
       return;
     }
 
     verificationAttempted.current = true;
 
+    // Adicionar delay inicial de 3 segundos
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+
     try {
-      console.log("[VerifyLogin] Fazendo requisição de verificação");
       const { data } = await api.get(`/auth/verify-login?token=${token}`);
-      console.log("[VerifyLogin] Resposta completa da verificação:", data);
 
       if (data?.message) {
         dispatch({ type: "SET_SUCCESS", payload: data.message });
 
-        // Aguardar um momento para o token ser processado
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        // Tentar obter os dados do usuário
+        // Buscar dados do usuário imediatamente
         const authSuccess = await refreshAuth();
 
         if (!authSuccess) {
           throw new Error("Não foi possível obter os dados do usuário");
         }
 
+        // Apenas um pequeno delay para mostrar mensagem de sucesso
         setTimeout(() => {
-          console.log("[VerifyLogin] Redirecionando para /");
           router.replace("/");
-        }, 2000);
+        }, 3000);
       } else {
         throw new Error("Resposta inválida do servidor");
       }
@@ -91,7 +88,8 @@ export default function VerifyLoginPage() {
           "Erro ao verificar token",
       });
 
-      setTimeout(() => router.replace("/login"), 3000);
+      // Reduzir o tempo de redirecionamento em caso de erro
+      setTimeout(() => router.replace("/login"), 2000);
     }
   }, [token, router, refreshAuth]);
 
@@ -99,47 +97,24 @@ export default function VerifyLoginPage() {
     verifyToken();
   }, [verifyToken]);
 
-  const renderContent = useMemo(() => {
-    const contents = {
-      loading: (
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-sm text-muted-foreground">
-            Aguarde enquanto verificamos suas credenciais...
-          </p>
-        </div>
-      ),
-      success: (
-        <Alert className="border-green-500 bg-green-50">
-          <AlertTitle className="text-green-800">Sucesso!</AlertTitle>
-          <AlertDescription className="text-green-700">
-            {state.message}
-          </AlertDescription>
-        </Alert>
-      ),
-      error: (
-        <Alert variant="destructive">
-          <AlertTitle>Erro</AlertTitle>
-          <AlertDescription>{state.message}</AlertDescription>
-        </Alert>
-      ),
-    };
-
-    return contents[state.status];
-  }, [state.status, state.message]);
+  const renderContent = useMemo(
+    () => (
+      <VerifyMessage
+        status={state.status}
+        message={state.message}
+        redirectText={
+          state.status === "success"
+            ? "Redirecionando para a página inicial..."
+            : state.status === "error"
+            ? "Redirecionando para o login..."
+            : undefined
+        }
+      />
+    ),
+    [state.status, state.message]
+  );
 
   return (
-    <div className="flex min-h-screen items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-center">
-            {state.status === "loading" && "Verificando acesso..."}
-            {state.status === "success" && "Login confirmado!"}
-            {state.status === "error" && "Erro na verificação"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>{renderContent}</CardContent>
-      </Card>
-    </div>
+    <div className="flex items-center justify-center p-4">{renderContent}</div>
   );
 }

@@ -62,9 +62,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const isCheckingAuth = useRef(false);
 
-  // Remover verificação manual de pathname pois agora é feita no middleware
+  const isVerificationRoute = useCallback(() => {
+    const pathname = window.location.pathname;
+    return (
+      pathname.startsWith("/verify-login") ||
+      pathname.startsWith("/verify-register")
+    );
+  }, []);
+
   const checkAuth = useCallback(async () => {
     if (isCheckingAuth.current) return;
+    if (isVerificationRoute()) {
+      dispatch({ type: "INITIALIZE" });
+      return;
+    }
     isCheckingAuth.current = true;
 
     try {
@@ -85,7 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       isCheckingAuth.current = false;
     }
-  }, []);
+  }, [isVerificationRoute]);
 
   useEffect(() => {
     if (!state.isAuthenticated) {
@@ -103,7 +114,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback((userData: User) => {
-    console.log("[AuthContext] Login chamado com dados:", userData);
     if (!userData) {
       console.error("[AuthContext] Tentativa de login com dados inválidos");
       return;
@@ -117,7 +127,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isInitialized: true,
       },
     });
-    console.log("[AuthContext] Estado atualizado após login");
   }, []);
 
   const logout = useCallback(async () => {
@@ -128,11 +137,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshAuth = useCallback(async () => {
-    console.log("[AuthContext] Iniciando refreshAuth");
     try {
       const response = await api.get("/auth/me");
-      console.log("[AuthContext] Dados do usuário obtidos:", response.data);
-
       dispatch({
         type: "SET_AUTH",
         payload: {
