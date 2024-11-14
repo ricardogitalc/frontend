@@ -103,7 +103,7 @@ export function LoginForm() {
               "Enviar link de acesso"
             )}
           </Button>
-          <GoogleAuthButton disabled={loading} />
+          <GoogleAuthButton />
           <AuthLinks type="login" />
         </CardFooter>
       </form>

@@ -72,6 +72,7 @@ export const authApi = {
     whatsapp?: string;
   }): Promise<AuthResponse> => {
     try {
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Delay de 1 segundo
       const response = await api.post("/auth/register", data);
       return response.data;
     } catch (error: any) {
@@ -83,6 +84,7 @@ export const authApi = {
 
   login: async (email: string): Promise<AuthResponse> => {
     try {
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Delay de 1 segundo
       const response = await api.post("/auth/login", { email });
       return response.data;
     } catch (error: any) {
@@ -103,6 +105,18 @@ export const authApi = {
     } catch (error: any) {
       return {
         error: error.response?.data?.message || "Erro ao verificar email",
+      };
+    }
+  },
+
+  updateProfile: async (userId: string, data: any): Promise<AuthResponse> => {
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Delay de 1 segundo
+      const response = await api.patch(`/auth/users/${userId}`, data);
+      return response.data;
+    } catch (error: any) {
+      return {
+        error: error.response?.data?.message || "Erro ao atualizar perfil",
       };
     }
   },

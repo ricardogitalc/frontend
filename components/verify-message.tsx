@@ -1,6 +1,7 @@
 import { CheckCircle2, XCircle, Loader2, ArrowRight } from "lucide-react";
 import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const verifyMessageVariants = cva(
   "flex flex-col items-center gap-4 p-6 rounded-lg animate-in fade-in duration-500 slide-in-from-bottom-4",
@@ -58,12 +59,11 @@ export function VerifyMessage({
       )}
     >
       <div className="flex flex-col items-center gap-6">
-        <div className="relative">
+        {status === "loading" ? (
+          <LoadingSpinner />
+        ) : (
           <Icon className={iconStyles[status]} />
-          {status === "loading" && (
-            <div className="absolute inset-0 h-12 w-12 animate-ping rounded-full border border-primary/20" />
-          )}
-        </div>
+        )}
 
         <div className="space-y-3 text-center">
           <h2 className="text-xl font-semibold tracking-tight">

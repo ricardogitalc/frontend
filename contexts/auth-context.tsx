@@ -15,6 +15,7 @@ import { destroyCookie } from "nookies";
 import { authEvents } from "@/hooks/auth-events";
 import { User } from "@/types/types";
 import { AuthContextType } from "@/interfaces/interfaces";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 type AuthState = {
   user: User | null;
@@ -168,7 +169,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   if (!state.isInitialized) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+        <LoadingSpinner />
       </div>
     );
   }

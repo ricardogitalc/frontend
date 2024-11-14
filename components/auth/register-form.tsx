@@ -178,7 +178,7 @@ export function RegisterForm() {
               "Criar conta"
             )}
           </Button>
-          <GoogleAuthButton disabled={loading} />
+          <GoogleAuthButton />
           <AuthLinks type="register" />
         </CardFooter>
       </form>

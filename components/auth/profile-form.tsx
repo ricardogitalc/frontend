@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useAuth } from "@/contexts/auth-context";
-import { api } from "@/services/api";
+import { api, authApi } from "@/services/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,22 +67,18 @@ export function ProfileForm({ user }: FormProfileProps) {
         if (whatsappClean) data.whatsapp = whatsappClean;
       }
 
-      const response = await api.patch(`/auth/users/${user.id}`, data);
+      const response = await authApi.updateProfile(user.id, data);
 
-      if (response.data?.error) {
-        setError(response.data.error);
+      if (response.error) {
+        setError(response.error);
         return;
       }
 
       await refreshAuth();
-      setFormChanged(false); // Adicionar esta linha
+      setFormChanged(false);
       setSuccess("Perfil atualizado com sucesso!");
     } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message ||
-        (Array.isArray(err.response?.data) ? err.response.data[0] : null) ||
-        "Erro ao atualizar perfil";
-      setError(errorMessage);
+      setError("Erro ao atualizar perfil");
     } finally {
       setIsLoading(false);
     }
