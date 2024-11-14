@@ -1,19 +1,17 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import api from "@/services/api";
 
-export default function VerifyRegisterPage({
-  params,
-}: {
-  params: { token: string };
-}) {
+export default function VerifyRegisterPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get("token");
   const { login } = useAuth();
   const [status, setStatus] = useState<"loading" | "success" | "error">(
     "loading"
@@ -22,21 +20,18 @@ export default function VerifyRegisterPage({
   const verificationAttempted = useRef(false);
 
   useEffect(() => {
-    if (!params.token || verificationAttempted.current) {
-      !params.token && router.replace("/register");
+    if (!token || verificationAttempted.current) {
+      !token && router.replace("/register");
       return;
     }
 
     const verifyRegistration = async () => {
       try {
-        const response = await api.get(`/auth/verify/${params.token}`);
+        const response = await api.get(`/auth/verify-register?token=${token}`);
 
-        if (response.data?.user) {
+        if (response.data?.message) {
           setStatus("success");
-          setMessage(
-            "Email verificado com sucesso! Você será redirecionado para a página de login."
-          );
-          login(response.data.user);
+          setMessage(response.data.message);
 
           setTimeout(() => {
             router.replace("/login");
@@ -62,7 +57,7 @@ export default function VerifyRegisterPage({
 
     verificationAttempted.current = true;
     verifyRegistration();
-  }, [params.token, router, login]);
+  }, [token, router, login]);
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">

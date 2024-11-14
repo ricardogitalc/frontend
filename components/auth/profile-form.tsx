@@ -75,6 +75,7 @@ export function ProfileForm({ user }: FormProfileProps) {
       }
 
       await refreshAuth();
+      setFormChanged(false); // Adicionar esta linha
       setSuccess("Perfil atualizado com sucesso!");
     } catch (err: any) {
       const errorMessage =

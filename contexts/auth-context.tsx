@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           !publicRoutes.includes(currentPath) &&
           !currentPath.includes("/verify-register/")
         ) {
-          router.replace("/login?error=session_expired");
+          router.replace("/login");
         }
       }
     } finally {
@@ -80,9 +80,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       "/verify-login",
       "/verify-register",
     ];
-    const isVerifyRegisterPath = pathname.startsWith("/verify-register/");
 
-    if (publicRoutes.includes(currentPath) || isVerifyRegisterPath) {
+    if (publicRoutes.includes(currentPath)) {
       setIsInitialized(true);
       return;
     }
