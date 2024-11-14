@@ -44,11 +44,3 @@ export interface RegisterData {
 export interface LoginData {
   email: string;
 }
-
-export interface AuthContextType {
-  user: User | null;
-  loading: boolean;
-  login: (user: User) => void;
-  logout: () => void;
-  refreshAuth: () => Promise<void>;
-}

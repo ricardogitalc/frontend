@@ -3,158 +3,178 @@
 import {
   createContext,
   useContext,
-  useState,
+  useReducer,
   useEffect,
   useCallback,
   useRef,
+  useMemo,
 } from "react";
 import api from "@/services/api";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { destroyCookie } from "nookies";
 import { authEvents } from "@/hooks/auth-events";
 import { User } from "@/types";
+import { AuthContextType } from "@/interfaces";
 
-interface AuthContextType {
-  isAuthenticated: boolean;
+type AuthState = {
   user: User | null;
-  loading: boolean;
-  login: (userData: User) => void;
-  logout: () => Promise<void>;
-  refreshAuth: () => Promise<void>;
+  isAuthenticated: boolean;
+  isInitialized: boolean;
+};
+
+type AuthAction =
+  | { type: "INITIALIZE" | "LOGOUT" }
+  | { type: "LOGIN"; payload: User }
+  | { type: "SET_AUTH"; payload: AuthState };
+
+const initialState: AuthState = {
+  user: null,
+  isAuthenticated: false,
+  isInitialized: false,
+};
+
+function authReducer(state: AuthState, action: AuthAction): AuthState {
+  switch (action.type) {
+    case "INITIALIZE":
+      return { ...state, isInitialized: true };
+    case "LOGIN":
+      return {
+        user: action.payload,
+        isAuthenticated: true,
+        isInitialized: true,
+      };
+    case "LOGOUT":
+      return {
+        ...initialState,
+        isInitialized: true,
+      };
+    case "SET_AUTH":
+      return { ...action.payload };
+    default:
+      return state;
+  }
 }
 
 const AuthContext = createContext({} as AuthContextType);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<User | null>(null);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [state, dispatch] = useReducer(authReducer, initialState);
   const router = useRouter();
-  const pathname = usePathname();
   const isCheckingAuth = useRef(false);
+  const pathname =
+    typeof window !== "undefined" ? window.location.pathname : "";
 
   const checkAuth = useCallback(async () => {
-    if (isCheckingAuth.current) return;
+    console.log("[AuthContext] Iniciando checkAuth");
+    if (isCheckingAuth.current) {
+      console.log("[AuthContext] CheckAuth já em execução");
+      return;
+    }
     isCheckingAuth.current = true;
 
     try {
+      console.log("[AuthContext] Fazendo requisição /auth/me");
       const response = await api.get("/auth/me");
+      console.log("[AuthContext] Resposta /auth/me:", response.data);
 
-      if (response.data) {
-        setUser(response.data);
-        setIsAuthenticated(true);
-      }
+      dispatch({
+        type: "SET_AUTH",
+        payload: {
+          user: response.data,
+          isAuthenticated: true,
+          isInitialized: true,
+        },
+      });
+      console.log("[AuthContext] Estado atualizado após /auth/me");
     } catch (error: any) {
-      setUser(null);
-      setIsAuthenticated(false);
-
+      console.error("[AuthContext] Erro em checkAuth:", error);
+      dispatch({ type: "LOGOUT" });
       if (error.response?.status === 401) {
         destroyCookie(undefined, "auth.accessToken");
-
-        const currentPath = window.location.pathname;
-        const publicRoutes = [
-          "/login",
-          "/register",
-          "/verify-login",
-          "/verify-register",
-        ];
-
-        if (
-          !publicRoutes.includes(currentPath) &&
-          !currentPath.includes("/verify-register/")
-        ) {
-          router.replace("/login");
-        }
       }
     } finally {
-      setIsInitialized(true);
       isCheckingAuth.current = false;
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
-    const currentPath = pathname;
-    const publicRoutes = [
-      "/login",
-      "/register",
-      "/verify-login",
-      "/verify-register",
-    ];
+    const isVerificationPage =
+      pathname.includes("/verify-login") ||
+      pathname.includes("/verify-register");
+    // || pathname.includes("/login");
 
-    if (publicRoutes.includes(currentPath)) {
-      setIsInitialized(true);
-      return;
-    }
-
-    if (!isAuthenticated) {
+    if (!state.isAuthenticated && !isVerificationPage) {
       checkAuth();
     } else {
-      setIsInitialized(true);
+      dispatch({ type: "INITIALIZE" });
     }
-  }, [checkAuth, pathname, isAuthenticated]);
+  }, [checkAuth, state.isAuthenticated, pathname]);
 
-  // Controle de redirecionamentos
-  useEffect(() => {
-    if (!isInitialized) return;
-
-    const publicRoutes = [
-      "/login",
-      "/register",
-      "/verify-login",
-      "/verify-register",
-    ];
-    const protectedRoutes = ["/profile", "/dashboard"];
-
-    if (isAuthenticated && publicRoutes.includes(pathname)) {
-      router.replace("/");
-    } else if (!isAuthenticated && protectedRoutes.includes(pathname)) {
-      router.replace("/login");
-    }
-  }, [isAuthenticated, pathname, router, isInitialized]);
-
-  // Adicionar listener para eventos de autenticação
   useEffect(() => {
     const unsubscribe = authEvents.subscribe(() => {
-      setUser(null);
-      setIsAuthenticated(false);
+      dispatch({ type: "LOGOUT" });
     });
-
     return () => unsubscribe();
   }, []);
 
-  // Modificar o login para emitir evento
-  const login = useCallback(
-    (userData: User) => {
-      setUser(userData);
-      setIsAuthenticated(true);
-      setIsInitialized(true);
-      authEvents.emit();
-      // Resetar quaisquer mensagens de erro de sessão expirada
-      if (window.location.search.includes("error=session_expired")) {
-        router.replace(window.location.pathname);
-      }
-    },
-    [router]
-  );
-
-  // Modificar o logout para emitir evento
-  const logout = async () => {
-    try {
-      await api.post("/auth/logout");
-      setUser(null);
-      setIsAuthenticated(false);
-      authEvents.emit();
-      window.location.href = "/login";
-    } catch (error) {
-      console.error("Erro ao fazer logout:", error);
+  const login = useCallback((userData: User) => {
+    console.log("[AuthContext] Login chamado com dados:", userData);
+    if (!userData) {
+      console.error("[AuthContext] Tentativa de login com dados inválidos");
+      return;
     }
-  };
+
+    dispatch({
+      type: "SET_AUTH",
+      payload: {
+        user: userData,
+        isAuthenticated: true,
+        isInitialized: true,
+      },
+    });
+    console.log("[AuthContext] Estado atualizado após login");
+  }, []);
+
+  const logout = useCallback(async () => {
+    await api.post("/auth/logout");
+    dispatch({ type: "LOGOUT" });
+    authEvents.emit();
+    window.location.href = "/login";
+  }, []);
 
   const refreshAuth = useCallback(async () => {
-    await checkAuth();
-  }, [checkAuth]);
+    console.log("[AuthContext] Iniciando refreshAuth");
+    try {
+      const response = await api.get("/auth/me");
+      console.log("[AuthContext] Dados do usuário obtidos:", response.data);
 
-  if (!isInitialized) {
+      dispatch({
+        type: "SET_AUTH",
+        payload: {
+          user: response.data,
+          isAuthenticated: true,
+          isInitialized: true,
+        },
+      });
+      return true;
+    } catch (error) {
+      console.error("[AuthContext] Erro ao atualizar autenticação:", error);
+      return false;
+    }
+  }, []);
+
+  const contextValue = useMemo(
+    () => ({
+      ...state,
+      loading: !state.isInitialized,
+      login,
+      logout,
+      refreshAuth,
+    }),
+    [state, login, logout, refreshAuth]
+  );
+
+  if (!state.isInitialized) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
@@ -163,18 +183,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider
-      value={{
-        isAuthenticated,
-        user,
-        loading: !isInitialized,
-        login,
-        logout,
-        refreshAuth,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 }
 
