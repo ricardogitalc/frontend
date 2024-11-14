@@ -94,7 +94,8 @@ export const authApi = {
     }
   },
 
-  googleAuth: () => {
+  googleAuth: async () => {
+    await new Promise((resolve) => setTimeout(resolve, 1000)); // Delay de 1 segundo
     window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google`;
   },
 
