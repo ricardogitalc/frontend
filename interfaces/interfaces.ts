@@ -1,4 +1,4 @@
-import { User } from "@/types";
+import { User } from "@/types/types";
 
 export interface FormProfileProps {
   user: User;

@@ -16,8 +16,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { UpdateUserProfile, User } from "@/types";
-import { FormProfileProps } from "@/interfaces";
+import { UpdateUserProfile, User } from "@/types/types";
+import { FormProfileProps } from "@/interfaces/interfaces";
 
 export function ProfileForm({ user }: FormProfileProps) {
   const { refreshAuth } = useAuth();

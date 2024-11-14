@@ -13,8 +13,8 @@ import api from "@/services/api";
 import { useRouter } from "next/navigation";
 import { destroyCookie } from "nookies";
 import { authEvents } from "@/hooks/auth-events";
-import { User } from "@/types";
-import { AuthContextType } from "@/interfaces";
+import { User } from "@/types/types";
+import { AuthContextType } from "@/interfaces/interfaces";
 
 type AuthState = {
   user: User | null;
@@ -61,22 +61,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(authReducer, initialState);
   const router = useRouter();
   const isCheckingAuth = useRef(false);
-  const pathname =
-    typeof window !== "undefined" ? window.location.pathname : "";
 
+  // Remover verificação manual de pathname pois agora é feita no middleware
   const checkAuth = useCallback(async () => {
-    console.log("[AuthContext] Iniciando checkAuth");
-    if (isCheckingAuth.current) {
-      console.log("[AuthContext] CheckAuth já em execução");
-      return;
-    }
+    if (isCheckingAuth.current) return;
     isCheckingAuth.current = true;
 
     try {
-      console.log("[AuthContext] Fazendo requisição /auth/me");
       const response = await api.get("/auth/me");
-      console.log("[AuthContext] Resposta /auth/me:", response.data);
-
       dispatch({
         type: "SET_AUTH",
         payload: {
@@ -85,9 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           isInitialized: true,
         },
       });
-      console.log("[AuthContext] Estado atualizado após /auth/me");
     } catch (error: any) {
-      console.error("[AuthContext] Erro em checkAuth:", error);
       dispatch({ type: "LOGOUT" });
       if (error.response?.status === 401) {
         destroyCookie(undefined, "auth.accessToken");
@@ -98,17 +88,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const isVerificationPage =
-      pathname.includes("/verify-login") ||
-      pathname.includes("/verify-register");
-    // || pathname.includes("/login");
-
-    if (!state.isAuthenticated && !isVerificationPage) {
+    if (!state.isAuthenticated) {
       checkAuth();
     } else {
       dispatch({ type: "INITIALIZE" });
     }
-  }, [checkAuth, state.isAuthenticated, pathname]);
+  }, [checkAuth, state.isAuthenticated]);
 
   useEffect(() => {
     const unsubscribe = authEvents.subscribe(() => {
