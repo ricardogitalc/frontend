@@ -20,3 +20,6 @@ export default function LoginPage() {
     </div>
   );
 }
+
+// O código atual já trata corretamente a exibição da mensagem de erro
+// Não são necessárias alterações neste arquivo

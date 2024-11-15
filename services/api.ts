@@ -48,14 +48,17 @@ api.interceptors.response.use(
     }
     return response;
   },
-  (error) => {
+  async (error) => {
+    const isUnauthorized = error.response?.status === 401;
     const isTokenError =
-      error.response?.status === 401 &&
+      isUnauthorized &&
       (error.response?.data?.message?.includes("expired") ||
-        error.response?.data?.message?.includes("invalid"));
+        error.response?.data?.message?.includes("invalid") ||
+        error.response?.data?.message?.includes("Unauthorized"));
 
     if (isTokenError) {
-      authEvents.emit(); // Emite evento quando token expira
+      // Emitir evento de autenticação para forçar logout
+      authEvents.emit();
     }
 
     return Promise.reject(error);

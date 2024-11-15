@@ -16,13 +16,18 @@ async function validateToken(token: string) {
 }
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const { pathname, searchParams } = request.nextUrl;
   const token = request.cookies.get("auth.accessToken")?.value;
 
   // Verificar autenticação para rotas protegidas
   if (protectedRoutes.some((route) => pathname.startsWith(route))) {
     if (!token || !(await validateToken(token))) {
-      return NextResponse.redirect(new URL("/login", request.url));
+      const loginUrl = new URL("/login", request.url);
+      // Preservar o parâmetro error se existir
+      if (searchParams.has("error")) {
+        loginUrl.searchParams.set("error", searchParams.get("error")!);
+      }
+      return NextResponse.redirect(loginUrl);
     }
   }
 

@@ -109,10 +109,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = authEvents.subscribe(() => {
-      dispatch({ type: "LOGOUT" });
+      if (state.isAuthenticated) {
+        dispatch({ type: "LOGOUT" });
+        destroyCookie(undefined, "auth.accessToken");
+        window.location.href = "/login?error=session_expired";
+      }
     });
     return () => unsubscribe();
-  }, []);
+  }, [state.isAuthenticated]);
 
   const login = useCallback((userData: User) => {
     if (!userData) {
