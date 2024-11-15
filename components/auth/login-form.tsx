@@ -37,16 +37,11 @@ export function LoginForm() {
 
       if (response.error) {
         setError(response.error);
-        return;
+      } else if (response.message) {
+        setSuccess(response.message);
       }
-
-      setSuccess(response.message || "Link de acesso enviado para seu email!");
     } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message ||
-        (Array.isArray(err.response?.data) ? err.response.data[0] : null) ||
-        "Erro ao fazer login";
-      setError(errorMessage);
+      setError(err.response?.data?.message || "Erro ao fazer login");
     } finally {
       setLoading(false);
     }

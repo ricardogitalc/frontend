@@ -43,12 +43,10 @@ export function RegisterForm() {
 
       if (response.error) {
         setError(response.error);
-        return;
+      } else if (response.message) {
+        setSuccess(response.message);
       }
-
-      setSuccess(response.message || "Registro realizado com sucesso!");
     } catch (err: any) {
-      // Melhor tratamento do erro
       const errorMessage =
         err.response?.data?.message ||
         (Array.isArray(err.response?.data) ? err.response.data[0] : null) ||

@@ -75,24 +75,22 @@ export const authApi = {
     whatsapp?: string;
   }): Promise<AuthResponse> => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Delay de 1 segundo
       const response = await api.post("/auth/register", data);
       return response.data;
     } catch (error: any) {
       return {
-        error: error.response?.data?.message,
+        error: error.response?.data?.message || "Ocorreu um erro inesperado",
       };
     }
   },
 
   login: async (email: string): Promise<AuthResponse> => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Delay de 1 segundo
       const response = await api.post("/auth/login", { email });
       return response.data;
     } catch (error: any) {
       return {
-        error: error.response?.data?.message,
+        error: error.response?.data?.message || "Ocorreu um erro inesperado",
       };
     }
   },
