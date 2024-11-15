@@ -136,8 +136,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     await api.post("/auth/logout");
-    dispatch({ type: "LOGOUT" });
-    authEvents.emit();
+    // dispatch({ type: "LOGOUT" });
+    // authEvents.emit();
     window.location.href = "/login";
   }, []);
 
